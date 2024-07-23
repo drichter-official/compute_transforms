@@ -86,7 +86,7 @@ def generate_positions(radius, center, n_pos, axis='Y', random=False, type='CIRC
         z = radius * np.cos(theta)
         positions = np.column_stack((x, y, z))+np.array(center)
     else:
-        raise ValueError("Invalid type. Choose from 'circle' or 'sphere'.")
+        raise ValueError("Invalid type. Choose from 'CIRCLE' or 'SPHERE'.")
 
     return positions
 def compute_vectors_to_origin(positions, origin):
@@ -106,6 +106,8 @@ def main():
     parser.add_argument('--output_dir', type=str, default='./data')
     parser.add_argument('--sampling', type=str, default='CIRCLE')
     parser.add_argument('--num_images', type=int, default=60)
+    parser.add_argument('--random_sampling', type=bool, default=False, help='normalize for instant_ngp box')
+
     parser.add_argument('--radius', type=float, default=4)
     parser.add_argument('--center', type=float, nargs=3, default=[0, 0, 0])
     parser.add_argument('--rot_axis', type=str, default='Y')
@@ -114,7 +116,7 @@ def main():
     parser.add_argument('--focal_length', type=float, default=40)  # Default normal camera focal length
     parser.add_argument('--sensor_size', type=float, default=36)  # Default normal camera sensor width
 
-    parser.add_argument('--normalize', action='store_true', help='normalize for instant_ngp box')
+    parser.add_argument('--normalize', type=bool, default=False, help='normalize for instant_ngp box')
     parser.add_argument('--visualize', action='store_true', help='visualize in image saved in output directory')
 
     parser.add_argument('--config_path', type=str, default='./configs/config_normal.ini', help='Path to load the configuration file')
@@ -127,6 +129,8 @@ def main():
         args.output_dir = config.get('output_dir', args.output_dir)
         args.sampling = config.get('sampling', args.sampling)
         args.num_images = int(config.get('num_images', args.num_images))
+        args.random_sampling = config.getboolean('random_sampling', args.random_sampling)
+
         args.radius = float(config.get('radius', args.radius))
         args.center = list(map(float, config.get('center', ','.join(map(str, args.center))).split(',')))
         args.rot_axis = config.get('rot_axis', args.rot_axis)
@@ -138,23 +142,17 @@ def main():
         args.normalize = config.getboolean('normalize', args.normalize)
         args.visualize = config.getboolean('visualize', args.visualize)
 
-    print("radius =", args.radius, "number images =", args.num_images,"rotation axis =",  args.rot_axis,"random =",  0, "sampling =", args.sampling)
-    camera_positions = generate_positions(args.radius,args.center, args.num_images, args.rot_axis, 0, args.sampling)
+    print(
+        f"radius = {args.radius}, "
+        f"number images = {args.num_images}, "
+        f"rotation axis = {args.rot_axis}, "
+        f"random = {args.random_sampling}, "
+        f"sampling = {args.sampling}"
+    )
 
+    camera_positions = generate_positions(args.radius,args.center, args.num_images, args.rot_axis, args.random_sampling, args.sampling)
     view_dirs = compute_vectors_to_origin(camera_positions, args.center)
-    #print(camera_positions)
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.mplot3d import Axes3D
 
-    #fig = plt.figure()
-    #ax = fig.add_subplot(111, projection='3d')
-    #ax.scatter(camera_positions[:,0],camera_positions[:,1],camera_positions[:,2], c='r', marker='o')
-
-    #ax.set_xlabel('X Label')
-    #ax.set_ylabel('Y Label')
-    #ax.set_zlabel('Z Label')
-
-    #plt.show()
     transform_list, image_paths_list = [], []
     print('Computing transform matrices')
     for idx, (pos,vec) in enumerate(zip(camera_positions,view_dirs)):
