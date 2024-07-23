@@ -69,7 +69,6 @@ def calculate_base_grid(n_img_height, n_img_width, n_focal_row, n_focal_col, pix
     grid_points_origins = u_focal[:, :, np.newaxis] * x_plane_vec + v_focal[:, :, np.newaxis] * y_plane_vec
     return grid_points_origins
 
-
 def compute_ray(origin, dir_point):
     # Convert inputs to numpy arrays for vector operations
     focal_point = np.array(dir_point, dtype=float)
