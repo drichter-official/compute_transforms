@@ -58,9 +58,10 @@ def create_json(filename, image_names, transform_matrices, camera_angle_x):
     with open(filename, 'w') as f:
         json.dump(data, f, indent=4)
 
-def generate_positions(radius, center, n_pos, axis='Y', random=False, type='CIRCLE'):
+def generate_positions(radius, center, n_pos, axis='Y', random=False, seed = 0, type='CIRCLE'):
     if type == 'CIRCLE':
         if random:
+            np.random.seed(seed)
             angles = np.random.uniform(0, 2 * np.pi, n_pos)
         else:
             angles = np.linspace(0, 2 * np.pi, n_pos, endpoint=False)
@@ -76,6 +77,7 @@ def generate_positions(radius, center, n_pos, axis='Y', random=False, type='CIRC
     elif type == 'SPHERE':
         phi = np.random.uniform(0, 2 * np.pi, n_pos)
         if random:
+            np.random.seed(seed)
             theta = np.arccos(2 * np.random.uniform(0, 1, n_pos) - 1)
         else:
             indices = np.arange(0, n_pos, dtype=float) + 0.5
@@ -107,6 +109,7 @@ def main():
     parser.add_argument('--sampling', type=str, default='CIRCLE')
     parser.add_argument('--num_images', type=int, default=60)
     parser.add_argument('--random_sampling', type=bool, default=False, help='normalize for instant_ngp box')
+    parser.add_argument('--seed', type=int, default=0)
 
     parser.add_argument('--radius', type=float, default=4)
     parser.add_argument('--center', type=float, nargs=3, default=[0, 0, 0])
@@ -130,6 +133,7 @@ def main():
         args.sampling = config.get('sampling', args.sampling)
         args.num_images = int(config.get('num_images', args.num_images))
         args.random_sampling = config.getboolean('random_sampling', args.random_sampling)
+        args.seed = int(config.get('seed', args.seed))
 
         args.radius = float(config.get('radius', args.radius))
         args.center = list(map(float, config.get('center', ','.join(map(str, args.center))).split(',')))
@@ -150,7 +154,7 @@ def main():
         f"sampling = {args.sampling}"
     )
 
-    camera_positions = generate_positions(args.radius,args.center, args.num_images, args.rot_axis, args.random_sampling, args.sampling)
+    camera_positions = generate_positions(args.radius,args.center, args.num_images, args.rot_axis, args.random_sampling, args.seed, args.sampling)
     view_dirs = compute_vectors_to_origin(camera_positions, args.center)
 
     transform_list, image_paths_list = [], []
